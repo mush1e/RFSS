@@ -22,7 +22,54 @@ namespace rfss {
         return os;
     }
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~ Parse Request ~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (URL Decode) ~~~~~~~~~~~~~~~~~~~~~~~
+    std::string url_decode(const std::string& str) {
+        int i = 0;
+        std::stringstream decoded;
+
+        while (i < str.length()) {
+            if (str[i] == '%') {
+                if (i + 2 < str.length()) {
+                    int hexValue;
+                    std::istringstream(str.substr(i + 1, 2)) >> std::hex >> hexValue;
+                    decoded << static_cast<char>(hexValue);
+                    i += 3;
+                } else {
+                    // If '%' is at the end of the string, leave it unchanged
+                    decoded << '%';
+                    i++;
+                }
+            } else if (str[i] == '+') {
+                decoded << ' ';
+                i++;
+            } else {
+                decoded << str[i];
+                i++;
+            }
+        }
+        return decoded.str();
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Parse Form Data ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    auto parse_form_data(const std::string& form_data, HTTPRequest& req) -> void {
+        std::istringstream iss(form_data);
+        std::string pair;
+        while (std::getline(iss, pair, '&')) {
+            size_t pos = pair.find('=');
+            if (pos != std::string::npos) {
+                std::string key = pair.substr(0, pos);
+                std::string value = pair.substr(pos + 1);
+
+                // Decode URL-encoded key and value
+                key = url_decode(key);
+                value = url_decode(value);
+                std::cout << key << ": " << value << std::endl;
+                req.body += key + ": " + value + "\n"; // Assuming you want to store key-value pairs in the body
+            }
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Parse Request ~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto parse_request(HTTPRequest& req, const std::string& req_str) -> void {
         std::istringstream iss(req_str);
         std::string line;
@@ -59,10 +106,28 @@ namespace rfss {
                     req.headers.emplace_back(key, value); 
             }
         }
+
+        for (const auto& header : req.headers) {
+            if (header.first == "Content-Length") {
+                int content_length = std::stoi(header.second);
+                if (content_length > 0) {
+                    std::string body_content(content_length, '\0');
+                    if (iss.read(&body_content[0], content_length)) {
+
+                        // URL decoding for form data
+                        if (req.headers[0].second == "application/x-www-form-urlencoded")
+                            parse_form_data(body_content, req);
+                        else
+                            req.body = body_content;
+                    }
+                }
+                break; 
+            }
+        }
     }
 
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~ Recieve Request ~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Recieve Request ~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto handle_client(int client_socket) -> void {
         HTTPRequest request {};
         char BUFFER[8192];
