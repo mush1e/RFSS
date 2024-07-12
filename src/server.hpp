@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <sys/select.h>
 
+#include "threadpool.hpp"
+
 #ifndef RFSS_SERVER_HPP
 #define RFSS_SERVER_HPP
 
@@ -17,6 +19,7 @@ namespace rfss {
         int server_socket {};
         int port{};
         sockaddr_in server_address {};
+        ThreadPool thread_pool{4};
 
     public:
         HTTP_Server(int port);
