@@ -1,4 +1,5 @@
 #include "server.hpp"
+#include "http_parser.hpp"
 
 namespace rfss {
     HTTP_Server::HTTP_Server(int port) : port(port) {
@@ -40,7 +41,9 @@ namespace rfss {
                 continue;
             }
 
-            // TODO: Add Threadpooling stuff
+            this->thread_pool.enqueue([client_socket] {
+                handle_client(client_socket);
+            });
         }
     }
 }

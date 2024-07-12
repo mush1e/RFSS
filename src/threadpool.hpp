@@ -22,9 +22,18 @@ namespace rfss {
 
     public:
         ThreadPool(size_t num_threads);
-        template<typename F, typename... Args>
-        void enqueue(F&& f, Args&&... args);
         ~ThreadPool();
+
+        template<typename F, typename... Args>
+        auto enqueue(F&& f, Args&&... args) -> void {
+            {
+                std::unique_lock<std::mutex> lock(queue_mutex);
+                if (stop)   
+                    throw std::runtime_error("enqueue on stopped ThreadPool");
+                tasks.emplace(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+            }
+            condition.notify_one();
+        }
     };
 
 }
