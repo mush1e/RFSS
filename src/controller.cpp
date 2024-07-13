@@ -224,7 +224,7 @@ namespace rfss {
             response.status_message = "OK";
             response.body = R"(
                                 <li class="nav-item">
-                                    <a class="nav-link" href="logout">Logout</a>
+                                    <a class="nav-link" href="/logout">Logout</a>
                                 </li>
                               )";
         } else {
@@ -240,6 +240,29 @@ namespace rfss {
                               )";
         }
         http_response = response.generate_response();
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    }
+
+    auto handle_get_logout(HTTPRequest& req, int client_socket) -> void {
+        std::string http_response;
+        HTTPResponse response; 
+
+        Session_Manager& session_manager = Session_Manager::get_instance();
+
+        auto it = std::find_if(req.cookies.begin(), req.cookies.end(), 
+                        [] (const std::pair<std::string, std::string>& cookie) {
+                            return cookie.first == "session_id";
+                        });
+        
+        if (it != req.cookies.end()) {
+            session_manager.terminate_session(it->second);
+        }
+
+        response.status_code = 302;
+        response.status_message = "FOUND";
+        response.location = "/";
+        http_response = response.generate_response();
+
         send(client_socket, http_response.c_str(), http_response.length(), 0);
     }
 }

@@ -31,6 +31,7 @@ namespace rfss {
     void handle_get_login(HTTPRequest& req, int client_socket);
     void handle_post_login(HTTPRequest& req, int client_socket);
     void handle_get_is_auth(HTTPRequest& req, int client_socket);
+    void handle_get_logout(HTTPRequest& req, int client_socket);
 }
 
 #endif
