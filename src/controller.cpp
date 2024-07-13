@@ -2,6 +2,24 @@
 
 namespace rfss {
 
+    auto send_bad_request = [](int client_socket) {
+        HTTPResponse response;
+        std::string http_response;
+        response.status_code = 400;
+        response.status_message = "Bad Request";
+        http_response = response.generate_response();
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    };
+
+    auto send_internal_server_error = [](int client_socket) {
+        HTTPResponse response;
+        std::string http_response;
+        response.status_code = 500;
+        response.status_message = "Internal Server Error";
+        http_response = response.generate_response();
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    };
+
     // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (Print Request) ~~~~~~~~~~~~~~~~~~~~~~~
     std::ostream& operator<<(std::ostream& os, const HTTPRequest& req) {
         os << "Method: " << req.method << "\n";
@@ -20,6 +38,34 @@ namespace rfss {
         os << "Body: " << req.body << "\n";
 
         return os;
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (URL Decode) ~~~~~~~~~~~~~~~~~~~~~~~
+    std::string url_decode(const std::string& str) {
+        int i = 0;
+        std::stringstream decoded;
+
+        while (i < str.length()) {
+            if (str[i] == '%') {
+                if (i + 2 < str.length()) {
+                    int hexValue;
+                    std::istringstream(str.substr(i + 1, 2)) >> std::hex >> hexValue;
+                    decoded << static_cast<char>(hexValue);
+                    i += 3;
+                } else {
+                    // If '%' is at the end of the string, leave it unchanged
+                    decoded << '%';
+                    i++;
+                }
+            } else if (str[i] == '+') {
+                decoded << ' ';
+                i++;
+            } else {
+                decoded << str[i];
+                i++;
+            }
+        }
+        return decoded.str();
     }
 
     auto sendNotFoundResponse(int client_socket) -> void {
@@ -51,6 +97,20 @@ namespace rfss {
             sendNotFoundResponse(client_socket);
     }
     
+    auto get_form_field(const std::string& body, const std::string& field_name) -> std::string {
+        std::string field_value;
+        size_t pos = body.find(field_name + "=");
+        if (pos != std::string::npos) {
+            pos += field_name.length() + 1;
+            size_t end_pos = body.find("&", pos);
+            end_pos = (end_pos == std::string::npos) ? body.length() : end_pos;
+            field_value = body.substr(pos, end_pos - pos);
+        }
+        return url_decode(field_value);
+    }
+
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ controllers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     auto handle_get_home(HTTPRequest& req, int client_socket) -> void {
         serveStaticFile("./public/index.html", client_socket);
@@ -61,11 +121,51 @@ namespace rfss {
     }
 
     auto handle_post_register(HTTPRequest& req, int client_socket) -> void {
+        std::string http_response;
         HTTPResponse response;
-        std::cout << req << std::endl;
+
+        Database& db = Database::get_instance();
+
+        std::string username = get_form_field(req.body, "username");
+        std::string password = get_form_field(req.body, "password");
+        std::string confirm_password = get_form_field(req.body, "confirm_password");
+        std::regex passwordRegex("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,}$");
+
+        if (username.empty() || password.empty() || confirm_password.empty()) {
+            send_bad_request(client_socket);
+            std::cerr << "Error: Empty Fields!\n";
+            return;
+        }
+
+        if (!std::regex_match(password, passwordRegex)) {
+            send_bad_request(client_socket);
+            std::cerr << "Error: Invalid Password!\n";
+            return;
+        }
+ 
+        if (password != confirm_password) {
+            send_bad_request(client_socket);
+            std::cerr << "Error: Password mismatch!\n";
+            return;
+        }
+
+        if (db.username_exists(username)) {
+            response.status_code = 409;
+            response.status_message = "Conflict";
+            http_response = response.generate_response();
+            send(client_socket, http_response.c_str(), http_response.length(), 0);
+            return;
+        }
+
+        if (!db.insert_user(username, password)) {
+            std::cerr << "Error: Failed to insert user into database" << std::endl;
+            send_internal_server_error(client_socket);
+            return;
+        }
+
         response.status_code = 200;
         response.status_message = "OK";
-        std::string http_response = response.generate_response();
+        http_response = response.generate_response();
         send(client_socket, http_response.c_str(), http_response.length(), 0);
     }
 

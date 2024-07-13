@@ -22,9 +22,9 @@
                     <div class="form-group">
                         <label for="register-password">Password</label>
                         <input type="password" class="form-control" id="register-password" name="password" required
-                               minlength="8">
+                            minlength="8" pattern="(^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}$)">
                         <small id="passwordHelp" class="form-text text-muted">
-                            Password must be at least 8 characters long.
+                            Password must be at least 8 characters long and contain at least one digit, one uppercase letter and one lowercase letter.
                         </small>
                     </div>
                     <div class="form-group">
@@ -39,11 +39,19 @@
         </div>
     </div>
     
-    
-
     <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <!-- JavaScript for handling HTMX response -->
+    <script>
+        document.getElementById('register-form').addEventListener('htmx:afterRequest', function(event) {
+            if (event.detail.xhr.status === 200) {
+                alert('User registered!');
+                window.location.href = '/'; // Redirect to the homepage or any desired URL
+            }
+        });
+    </script>
 </body>
 </html>

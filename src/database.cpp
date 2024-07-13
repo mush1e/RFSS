@@ -7,7 +7,7 @@ namespace rfss {
         return instance;
     }
 
-    std::string generate_salt() {
+    auto generate_salt() -> std::string {
         const std::string char_list = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
         const size_t salt_length = 16; 
         std::string salt;
@@ -21,13 +21,32 @@ namespace rfss {
         return salt;
     }
 
-    std::string hash_password(const std::string& password) {
+    auto hash_password(const std::string& password) -> std::string {
         std::hash<std::string> hash_fn;
         return std::to_string(hash_fn(password));
     }
 
+    auto Database::username_exists(const std::string& username) -> bool {
+        std::string sanitized_username = username;
+        sanitize_input(sanitized_username);
+        std::string query = "SELECT COUNT(*) FROM users WHERE username = '" + sanitized_username + "'";
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
+            std::cerr << "Error preparing SQL statement" << std::endl;
+            return false;
+        }
+        int count = 0;
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            count = sqlite3_column_int(stmt, 0);
+        }
+        sqlite3_finalize(stmt);
+        return count > 0;
+    }
 
-    auto Database::insert_user(std::string& username, std::string& password) -> bool {
+    auto Database::insert_user(std::string& username_, std::string& password_) -> bool {
+
+        std::string username = username_;
+        std::string password = password_;
         sanitize_input(username);
         sanitize_input(password);
         
@@ -36,10 +55,10 @@ namespace rfss {
         std::string hashed_password = hash_password(salted_password);
 
 
-        std::string query = "INSERT INTO users (username, password_hash, password_salt, is_admin) VALUES ('" 
+        std::string query = "INSERT INTO users (username, password_hash, password_salt) VALUES ('" 
                                 + username + "', '" 
                                 + hashed_password + "', '" 
-                                + salt + ")";
+                                + salt + "')";
 
         return execute_query(query.c_str());
     }

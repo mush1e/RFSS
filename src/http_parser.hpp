@@ -20,8 +20,6 @@ namespace rfss {
     void parse_request(HTTPRequest& req, const std::string& req_str);
     void parse_form_data(const std::string& form_data, HTTPRequest& req);
 
-    // Helper
-    std::string url_decode(const std::string& str);
 }
 
 #endif

@@ -2,34 +2,6 @@
 
 namespace rfss {
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (URL Decode) ~~~~~~~~~~~~~~~~~~~~~~~
-    std::string url_decode(const std::string& str) {
-        int i = 0;
-        std::stringstream decoded;
-
-        while (i < str.length()) {
-            if (str[i] == '%') {
-                if (i + 2 < str.length()) {
-                    int hexValue;
-                    std::istringstream(str.substr(i + 1, 2)) >> std::hex >> hexValue;
-                    decoded << static_cast<char>(hexValue);
-                    i += 3;
-                } else {
-                    // If '%' is at the end of the string, leave it unchanged
-                    decoded << '%';
-                    i++;
-                }
-            } else if (str[i] == '+') {
-                decoded << ' ';
-                i++;
-            } else {
-                decoded << str[i];
-                i++;
-            }
-        }
-        return decoded.str();
-    }
-
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Parse Form Data ~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto parse_form_data(const std::string& form_data, HTTPRequest& req) -> void {
         std::istringstream iss(form_data);
