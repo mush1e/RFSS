@@ -169,4 +169,17 @@ namespace rfss {
         send(client_socket, http_response.c_str(), http_response.length(), 0);
     }
 
+    auto handle_get_login(HTTPRequest& req, int client_socket) -> void {
+        serveStaticFile("./public/login.html", client_socket);
+    }
+
+    auto handle_post_login(HTTPRequest& req, int client_socket) -> void {
+        HTTPResponse response {};
+        std::string http_response {};
+
+        std::string username = get_form_field(req.body, "username");
+        std::string password = get_form_field(req.body, "password");
+
+        Database& db = Database::get_instance();
+    }
 }

@@ -6,9 +6,12 @@ namespace rfss {
         if (req.method == "GET") {
                  if (req.URI == "/")            handle_get_home(req, client_socket);
             else if (req.URI == "/register")    handle_get_register(req, client_socket);
+            else if (req.URI == "/login")       handle_get_login(req, client_socket);
+
         }
         else if (req.method == "POST") {
-            if (req.URI == "/register")         handle_post_register(req, client_socket);
+                 if (req.URI == "/register")    handle_post_register(req, client_socket);
+            else if (req.URI == "/login")       handle_post_login(req, client_socket);
         } else {
             // serve not found static file
         }
