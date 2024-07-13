@@ -21,12 +21,12 @@ namespace rfss {
         static Database& get_instance();
         void create_tables();
         bool execute_query(const char* query);
-        std::string sanitize_input(std::string& input) const;
+        void sanitize_input(std::string& input) const;
         sqlite3* get_db_handle() const;
 
         bool username_exists(const std::string& username);
         bool login(const std::string& username, const std::string& password);
-        bool insert_user(const std::string& username, const std::string& password);
+        bool insert_user(std::string& username, std::string& password);
 
         std::string get_user(const std::string& username);
     };

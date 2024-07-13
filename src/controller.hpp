@@ -21,6 +21,8 @@ namespace rfss {
 
     // controllers
     void handle_get_home(HTTPRequest& req, int client_socket);
+    void handle_get_register(HTTPRequest& req, int client_socket);
+    void handle_post_register(HTTPRequest& req, int client_socket);
 
 }
 

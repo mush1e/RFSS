@@ -56,4 +56,17 @@ namespace rfss {
         serveStaticFile("./public/index.html", client_socket);
     }
 
+    auto handle_get_register(HTTPRequest& req, int client_socket) -> void {
+        serveStaticFile("./public/register.html", client_socket);
+    }
+
+    auto handle_post_register(HTTPRequest& req, int client_socket) -> void {
+        HTTPResponse response;
+        std::cout << req << std::endl;
+        response.status_code = 200;
+        response.status_message = "OK";
+        std::string http_response = response.generate_response();
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    }
+
 }

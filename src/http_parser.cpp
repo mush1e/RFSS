@@ -69,7 +69,7 @@ namespace rfss {
                 key.erase(key.find_last_not_of(" \t") + 1);
                 value.erase(0, value.find_first_not_of(" \t"));
                 value.erase(value.find_last_not_of(" \t") + 1);
-                req.headers.emplace_back(key, value);
+
                 if (key == "Cookie") {
                     // Parse cookies
                     std::istringstream cookie_stream(value);
@@ -82,8 +82,10 @@ namespace rfss {
                             req.cookies.emplace_back(cookie_name, cookie_value);
                         }
                     }
-                } else 
-                    req.headers.emplace_back(key, value); 
+                } else {
+                    // Add other headers
+                    req.headers.emplace_back(key, value);
+                }
             }
         }
 
@@ -95,7 +97,7 @@ namespace rfss {
                     if (iss.read(&body_content[0], content_length)) {
 
                         // URL decoding for form data
-                        if (req.headers[0].second == "application/x-www-form-urlencoded")
+                        if (req.headers[0].second.find("application/x-www-form-urlencoded") != std::string::npos) 
                             parse_form_data(body_content, req);
                         else
                             req.body = body_content;
