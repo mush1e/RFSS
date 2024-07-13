@@ -21,7 +21,6 @@ namespace rfss {
     void parse_form_data(const std::string& form_data, HTTPRequest& req);
 
     // Helper
-    std::ostream& operator<<(std::ostream& os, const HTTPRequest& req);
     std::string url_decode(const std::string& str);
 }
 
