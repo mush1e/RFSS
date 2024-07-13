@@ -188,6 +188,23 @@ namespace rfss {
             return;
         }
 
+        if (!db.login(username, password)) {
+            // If the credentials don't match, send unauthorized response
+            response.status_code = 401;
+            response.status_message = "Unauthorized";
+            http_response = response.generate_response();
+            send(client_socket, http_response.c_str(), http_response.length(), 0);
+            return;
+        }
 
+        Session_Manager& session_manager = Session_Manager::get_instance();
+        std::string session_id = session_manager.create_session(username);
+
+        response.status_code = 200;
+        response.status_message = "OK";
+        response.cookies = {"session_id", session_id};
+
+        std::string success_response = response.generate_response();
+        send(client_socket, success_response.c_str(), success_response.length(), 0);
     }
 }

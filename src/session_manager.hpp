@@ -28,7 +28,7 @@ namespace rfss {
         std::string create_session(const std::string& user_id);
         std::string generate_session_id() const;
         bool terminate_session(const std::string& session_id);
-        std::string get_user_id(const std::string& session_id);
+        std::string get_user_id(const std::string& session_id) const;
     };
 }
 

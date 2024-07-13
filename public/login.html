@@ -40,7 +40,7 @@
     <script>
         document.getElementById('login-form').addEventListener('htmx:afterRequest', function(event) {
             if (event.detail.xhr.status === 200) {
-                alert('User registered!');
+                alert('User Logged In!');
                 window.location.href = '/'; // Redirect to the homepage or any desired URL
             }
         });

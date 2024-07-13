@@ -8,6 +8,7 @@
 
 #include "http.hpp"
 #include "database.hpp"
+#include "session_manager.hpp"
 
 #ifndef RFSS_CONTROLLER_HPP
 #define RFSS_CONTRILLER_HPP

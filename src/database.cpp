@@ -26,6 +26,38 @@ namespace rfss {
         return std::to_string(hash_fn(password));
     }
 
+    auto Database::login(const std::string& username_, const std::string& password_) -> bool {
+        std::string username = username_;
+        std::string password = password_;
+
+        sanitize_input(username);
+        sanitize_input(password);
+
+        std::string query = "SELECT password_salt, password_hash FROM users WHERE username = '" + username + "'";
+        sqlite3_stmt* stmt;
+        
+        if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
+            std::cerr << "Error preparing SQL statement" << std::endl;
+            return false;
+        }
+
+        std::string stored_salt;
+        std::string stored_hash;
+        
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            stored_salt = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            stored_hash = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        }
+
+        sqlite3_finalize(stmt);
+
+        // Hash the provided password with the retrieved salt and compare it with the stored hash
+        std::string salted_password = stored_salt + password;
+        std::string hashed_password = hash_password(salted_password);
+
+        return hashed_password == stored_hash;
+    } 
+
     auto Database::username_exists(const std::string& username) -> bool {
         std::string sanitized_username = username;
         sanitize_input(sanitized_username);
