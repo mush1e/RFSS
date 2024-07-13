@@ -24,14 +24,12 @@ namespace rfss {
 
     auto sendNotFoundResponse(int client_socket) -> void {
 
-        std::string notFoundContent = "<h1>404 Not Found</h1>";
+        HTTPResponse response {};
+        response.status_code = 400;
+        response.status_message = "Bad Request";
+        std::string http_response = response.generate_response();
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
 
-        std::string response = "HTTP/1.1 404 Not Found\r\nContent-Length: "
-                                + std::to_string(notFoundContent.length())
-                                + "\r\n\r\n"
-                                + notFoundContent;
-
-        send(client_socket, response.c_str(), response.length(), 0);
     }
 
     auto serveStaticFile(const std::string& file_path, int client_socket) -> void {

@@ -1,5 +1,4 @@
 #include "server.hpp"
-#include "http_parser.hpp"
 
 namespace rfss {
     HTTP_Server::HTTP_Server(int port) : port(port) {
@@ -30,12 +29,13 @@ namespace rfss {
             std::cerr << "Error: Failed to listen for connections!\n";
             exit(1);
         }
-
+        Database& db = Database::get_instance();
         std::cout << "Server Started! Listening on port: " << this->port << std::endl;
         
         for(;;) {
-            int client_socket = accept(this->server_socket, nullptr, nullptr);
 
+            int client_socket = accept(this->server_socket, nullptr, nullptr);
+            
             if(client_socket < 0) {
                 std::cerr << "Error: Failed to accept connection!\n";
                 continue;

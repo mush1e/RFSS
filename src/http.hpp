@@ -1,5 +1,7 @@
 #include <vector>
 #include <string>
+#include <sstream>
+#include <iostream>
 
 #ifndef RFSS_HTTP_HPP
 #define RFSS_HTTP_HPP

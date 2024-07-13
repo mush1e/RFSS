@@ -9,6 +9,8 @@
 #include <sys/select.h>
 
 #include "threadpool.hpp"
+#include "http_parser.hpp"
+#include "database.hpp"
 
 #ifndef RFSS_SERVER_HPP
 #define RFSS_SERVER_HPP
