@@ -42,6 +42,10 @@
             if (event.detail.xhr.status === 200) {
                 alert('User Logged In!');
                 window.location.href = '/'; // Redirect to the homepage or any desired URL
+            } else if (event.detail.xhr.status === 401) {
+                alert('Invalid credentials. Please try again.');
+            } else {
+                alert('Login failed. Please try again later.');
             }
         });
     </script>
