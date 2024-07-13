@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFSS - Remote File Storage System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">RFSS - Remote File Storage System</h1>
+        
+        <!-- File Upload Form -->
+        <div class="mt-4">
+            <h3>Upload a File</h3>
+            <form id="upload-form" hx-post="/upload" hx-boost="true" hx-target="#file-list">
+                <div class="form-group">
+                    <input type="file" class="form-control-file" name="file" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+
+        <!-- File Listing -->
+        <div class="mt-4">
+            <h3>File List</h3>
+            <div id="file-list" hx-get="/files" hx-trigger="load" hx-swap="innerHTML">
+                <!-- File list will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -22,8 +22,40 @@ namespace rfss {
         return os;
     }
 
+    auto sendNotFoundResponse(int client_socket) -> void {
+
+        std::string notFoundContent = "<h1>404 Not Found</h1>";
+
+        std::string response = "HTTP/1.1 404 Not Found\r\nContent-Length: "
+                                + std::to_string(notFoundContent.length())
+                                + "\r\n\r\n"
+                                + notFoundContent;
+
+        send(client_socket, response.c_str(), response.length(), 0);
+    }
+
+    auto serveStaticFile(const std::string& file_path, int client_socket) -> void {
+        std::ifstream file(file_path);
+
+        if (file.good()) {
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            std::string content = buffer.str();
+
+            std::string response = "HTTP/1.1 200 OK\r\nContent-Length: "
+                                    + std::to_string(content.length())
+                                    + "\r\n\r\n"
+                                    + content;
+
+            send(client_socket, response.c_str(), response.length(), 0);
+        }
+        else
+            sendNotFoundResponse(client_socket);
+    }
+    
+
     auto handle_get_home(HTTPRequest& req, int client_socket) -> void {
-        std::cout << req << std::endl;
+        serveStaticFile("./public/index.html", client_socket);
     }
 
 }

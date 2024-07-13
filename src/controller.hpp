@@ -1,5 +1,8 @@
 #include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <sstream>
+#include <sys/socket.h>
 #include <unordered_map>
 
 #include "http.hpp"
@@ -11,7 +14,7 @@ namespace rfss {
 
     // helpers
     void sendNotFoundResponse(int client_socket);
-    void serveStaticFile(const std::string& filePath, int client_socket);
+    void serveStaticFile(const std::string& file_path, int client_socket);
     std::unordered_map<std::string, std::string> parse_parameters(std::string uri);
     std::ostream& operator<<(std::ostream& os, const HTTPRequest& req);
 
