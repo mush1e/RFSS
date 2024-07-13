@@ -207,4 +207,39 @@ namespace rfss {
         std::string success_response = response.generate_response();
         send(client_socket, success_response.c_str(), success_response.length(), 0);
     }
+
+    auto handle_get_is_auth(HTTPRequest& req, int client_socket) -> void {
+        std::string http_response;
+        HTTPResponse response;
+
+        Session_Manager& session_manager = Session_Manager::get_instance();
+
+        auto it = std::find_if(req.cookies.begin(), req.cookies.end(), 
+                        [](const std::pair<std::string, std::string>& cookie) {
+                            return cookie.first == "session_id";
+                        });
+
+        if (it != req.cookies.end() && session_manager.is_valid_session(it->second)) {
+            response.status_code = 200;
+            response.status_message = "OK";
+            response.body = R"(
+                                <li class="nav-item">
+                                    <a class="nav-link" href="logout">Logout</a>
+                                </li>
+                              )";
+        } else {
+            response.status_code = 200;
+            response.status_message = "Forbidden";
+            response.body = R"(
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/register">Register</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/login">Login</a>
+                                </li>
+                              )";
+        }
+        http_response = response.generate_response();
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    }
 }
