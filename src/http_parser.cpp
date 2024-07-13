@@ -142,7 +142,8 @@ namespace rfss {
 
         std::string http_request_string(BUFFER, bytes_read);
         parse_request(request, http_request_string);
-        std::cout << request << std::endl;
+        handle_request(request, client_socket);
+        close(client_socket);
     }
 
 }
