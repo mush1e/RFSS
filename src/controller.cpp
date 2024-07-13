@@ -181,5 +181,13 @@ namespace rfss {
         std::string password = get_form_field(req.body, "password");
 
         Database& db = Database::get_instance();
+
+        if (username.empty() || password.empty()) {
+            send_bad_request(client_socket);
+            std::cerr << "Error: Empty Fields!\n";
+            return;
+        }
+
+
     }
 }
