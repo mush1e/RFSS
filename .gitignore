@@ -5,7 +5,8 @@ src/a.out
 server
 
 # Object Files
-obj/
+obj/*
+!obj/.gitkeep
 
 # Build Artifacts
 *.o
@@ -22,4 +23,5 @@ obj/
 .vimrc
 
 db/*
+!db/.gitkeep
 script_storage/
