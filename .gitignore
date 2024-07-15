@@ -24,4 +24,6 @@ obj/*
 
 db/*
 !db/.gitkeep
-script_storage/
+
+file_dump/*
+!file_dump/.gitkeep
