@@ -22,6 +22,7 @@ namespace rfss {
     std::ostream& operator<<(std::ostream& os, const HTTPRequest& req);
     std::string get_form_field(const std::string& body, const std::string& field_name);
     std::string url_decode(const std::string& str);
+    std::string get_file_extention(const std::string& filename);
 
 
     // controllers
@@ -32,6 +33,7 @@ namespace rfss {
     void handle_post_login(HTTPRequest& req, int client_socket);
     void handle_get_is_auth(HTTPRequest& req, int client_socket);
     void handle_get_logout(HTTPRequest& req, int client_socket);
+    void handle_file_upload(HTTPRequest& req, int client_socket);
 }
 
 #endif

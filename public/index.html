@@ -26,13 +26,16 @@
         <!-- File Upload Form -->
         <div class="mt-4">
             <h3>Upload a File</h3>
-            <form id="upload-form" hx-post="/upload" hx-boost="true" hx-target="#file-list">
+            <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data">
                 <div class="form-group">
                     <input type="file" class="form-control-file" name="file" required>
                 </div>
                 <button type="submit" class="btn btn-primary">Upload</button>
             </form>
         </div>
+        
+
+
 
     <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

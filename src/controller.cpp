@@ -68,8 +68,16 @@ namespace rfss {
         return decoded.str();
     }
 
-    auto sendNotFoundResponse(int client_socket) -> void {
+    // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (File extention) ~~~~~~~~~~~~~~~~~~~~~~~
+    auto get_file_extention(const std::string& filename) -> std::string {
+        size_t dot_pos = filename.find_first_of('.');
+        if (dot_pos == std::string::npos)
+            return "";
+        return filename.substr(dot_pos + 1);
+    }
 
+
+    auto sendNotFoundResponse(int client_socket) -> void {
         HTTPResponse response {};
         response.status_code = 400;
         response.status_message = "Bad Request";
@@ -261,6 +269,16 @@ namespace rfss {
         response.status_code = 302;
         response.status_message = "FOUND";
         response.location = "/";
+        http_response = response.generate_response();
+
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    }
+
+    auto handle_file_upload(HTTPRequest& req, int client_socket) -> void {
+        std::string http_response;
+        HTTPResponse response;
+        response.status_code = 200;
+        response.status_message = "OK";
         http_response = response.generate_response();
 
         send(client_socket, http_response.c_str(), http_response.length(), 0);

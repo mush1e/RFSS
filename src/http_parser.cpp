@@ -60,22 +60,33 @@ namespace rfss {
                 }
             }
         }
-
         for (const auto& header : req.headers) {
             if (header.first == "Content-Length") {
                 int content_length = std::stoi(header.second);
                 if (content_length > 0) {
                     std::string body_content(content_length, '\0');
                     if (iss.read(&body_content[0], content_length)) {
+                        
+                        auto content_type_header = std::find_if(req.headers.begin(), req.headers.end(), 
+                            [](const std::pair<std::string, std::string>& header) {
+                                return header.first == "Content-Type";
+                            });
 
-                        // URL decoding for form data
-                        if (req.headers[0].second.find("application/x-www-form-urlencoded") != std::string::npos) 
-                            parse_form_data(body_content, req);
-                        else
-                            req.body = body_content;
-                    }
+                        if (content_type_header != req.headers.end()) 
+
+                            if (content_type_header->second.find("application/x-www-form-urlencoded") != std::string::npos) 
+                                parse_form_data(body_content, req);
+
+                            else if (content_type_header->second.find("multipart/form-data") != std::string::npos) 
+                                std::cout << "Encountered form data\n";
+
+                            else 
+                                req.body = body_content;
+                            
+                    } else 
+                        std::cerr << "Could not read body content" << std::endl;
                 }
-                break; 
+                break;
             }
         }
     }
@@ -84,9 +95,16 @@ namespace rfss {
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Recieve Request ~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto handle_client(int client_socket) -> void {
         HTTPRequest request {};
-        char BUFFER[8192];
+        std::string http_request_string;
+        ssize_t bytes_read;
+        char BUFFER[100000];
 
-        ssize_t bytes_read = recv(client_socket, BUFFER, sizeof(BUFFER), 0);
+        while ((bytes_read = recv(client_socket, BUFFER, sizeof(BUFFER), 0)) > 0) {
+            http_request_string.append(BUFFER, bytes_read);
+            std::cout << "Reading" << std::endl;
+            if (http_request_string.find("\r\n\r\n") != std::string::npos) 
+                break;
+        }
         
         if (bytes_read <= 0) {
             std::cerr << "Error: Client disconnected from server!\n";
@@ -94,7 +112,6 @@ namespace rfss {
             return;
         }
 
-        std::string http_request_string(BUFFER, bytes_read);
         parse_request(request, http_request_string);
         handle_request(request, client_socket);
         close(client_socket);
