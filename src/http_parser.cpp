@@ -2,7 +2,7 @@
 
 namespace rfss {
 
-    const int BUFFER_SIZE = 4014;
+    const int BUFFER_SIZE = 99999;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Parse Form Data ~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto parse_form_data(const std::string& form_data, HTTPRequest& req) -> void {
@@ -93,37 +93,35 @@ namespace rfss {
         }
     }
 
-    bool ends_with(const std::string &str, const std::string &suffix) {
-        return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
-    }
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Recieve Request ~~~~~~~~~~~~~~~~~~~~~~~~~~
     void handle_client(int client_socket) {
-        char buffer[BUFFER_SIZE];
-        std::string http_request_string;
-        int bytes_read = 0;
+    char buffer[BUFFER_SIZE];
+    std::string http_request_string;
+    int bytes_read = 0;
 
-        do {
-            bytes_read = recv(client_socket, buffer, BUFFER_SIZE, 0);
-            if (bytes_read < 0) {
-                std::cerr << "Error: Client disconnected from server or no data received!\n";
-                close(client_socket);
-                return;
-            }
-            if (bytes_read == 0)
-                break;
+    do {
+        bytes_read = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_read < 0) {
+            std::cerr << "Error: Client disconnected from server or no data received!\n";
+            close(client_socket);
+            return;
+        }
+        if (bytes_read == 0)
+            break;
 
-            http_request_string.append(buffer, bytes_read);
+        http_request_string.append(buffer,bytes_read);
 
-            if (ends_with(http_request_string, "\r\n\r\n"))
-                break;
+        if (http_request_string.find("\r\n\r\n") != std::string::npos)
+            break;
+    
+    } while (bytes_read > 0);
 
-        } while (bytes_read > 0);
 
-
-        HTTPRequest request;
-        parse_request(request, http_request_string);
-        handle_request(request, client_socket);
-        close(client_socket);
+    HTTPRequest request;
+    parse_request(request, http_request_string);
+    handle_request(request, client_socket);
+    close(client_socket);
 }
 
 }
