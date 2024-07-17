@@ -26,7 +26,7 @@
         <!-- File Upload Form -->
         <div class="mt-4">
             <h3>Upload a File</h3>
-            <form id="upload-form" hx-post="/upload" hx-encoding="multipart/form-data">
+            <form id="upload-form">
                 <div class="form-group">
                     <input type="file" class="form-control-file" name="file" required>
                 </div>
@@ -41,5 +41,25 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+    
+            let form = event.target;
+            let formData = new FormData(form);
+    
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
 </body>
 </html>

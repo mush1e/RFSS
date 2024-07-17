@@ -2,6 +2,8 @@
 
 namespace rfss {
 
+    const int BUFFER_SIZE = 4014;
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Parse Form Data ~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto parse_form_data(const std::string& form_data, HTTPRequest& req) -> void {
         std::istringstream iss(form_data);
@@ -91,30 +93,37 @@ namespace rfss {
         }
     }
 
-
+    bool ends_with(const std::string &str, const std::string &suffix) {
+        return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+    }
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Recieve Request ~~~~~~~~~~~~~~~~~~~~~~~~~~
-    auto handle_client(int client_socket) -> void {
-        HTTPRequest request {};
+    void handle_client(int client_socket) {
+        char buffer[BUFFER_SIZE];
         std::string http_request_string;
-        ssize_t bytes_read;
-        char BUFFER[100000];
+        int bytes_read = 0;
 
-        while ((bytes_read = recv(client_socket, BUFFER, sizeof(BUFFER), 0)) > 0) {
-            http_request_string.append(BUFFER, bytes_read);
-            std::cout << "Reading" << std::endl;
-            if (http_request_string.find("\r\n\r\n") != std::string::npos) 
+        do {
+            bytes_read = recv(client_socket, buffer, BUFFER_SIZE, 0);
+            if (bytes_read < 0) {
+                std::cerr << "Error: Client disconnected from server or no data received!\n";
+                close(client_socket);
+                return;
+            }
+            if (bytes_read == 0)
                 break;
-        }
-        
-        if (bytes_read <= 0) {
-            std::cerr << "Error: Client disconnected from server!\n";
-            close(client_socket);
-            return;
-        }
 
+            http_request_string.append(buffer, bytes_read);
+
+            if (ends_with(http_request_string, "\r\n\r\n"))
+                break;
+
+        } while (bytes_read > 0);
+
+
+        HTTPRequest request;
         parse_request(request, http_request_string);
         handle_request(request, client_socket);
         close(client_socket);
-    }
+}
 
 }
