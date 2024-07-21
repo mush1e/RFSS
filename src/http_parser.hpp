@@ -6,6 +6,8 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <unordered_map>
+#include <chrono>
+
 
 #include "http_request_handler.hpp"
 
@@ -17,7 +19,8 @@ namespace rfss {
 
 
     void handle_client(int client_socket);
-    void parse_request(HTTPRequest& req, const std::string& req_str);
+    void parse_headers(HTTPRequest& req, const std::string& req_str);
+    void parse_body(HTTPRequest& req, const std::string& req_str);
     void parse_form_data(const std::string& form_data, HTTPRequest& req);
 
 }

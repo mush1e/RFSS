@@ -23,6 +23,7 @@ namespace rfss {
         std::string method   {};
         std::string URI      {};
         std::string version  {};
+        std::string multipart_boundary {};
         std::vector<std::pair<std::string, std::string>> headers {};
         std::vector<std::pair<std::string, std::string>> cookies {};
         std::string body     {};

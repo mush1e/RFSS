@@ -137,7 +137,6 @@ namespace rfss {
         std::string password = get_form_field(req.body, "password");
         std::string confirm_password = get_form_field(req.body, "confirm_password");
         std::regex passwordRegex("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,}$");
-        std::cout << "x" << password << "x" << std::endl;
         if (username.empty() || password.empty() || confirm_password.empty()) {
             send_bad_request(client_socket);
             std::cerr << "Error: Empty Fields!\n";
