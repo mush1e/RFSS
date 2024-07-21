@@ -107,10 +107,10 @@ namespace rfss {
     
     auto get_form_field(const std::string& body, const std::string& field_name) -> std::string {
         std::string field_value;
-        size_t pos = body.find(field_name + "=");
+        size_t pos = body.find(field_name + ": ");
         if (pos != std::string::npos) {
             pos += field_name.length() + 1;
-            size_t end_pos = body.find("&", pos);
+            size_t end_pos = body.find("\n", pos);
             end_pos = (end_pos == std::string::npos) ? body.length() : end_pos;
             field_value = body.substr(pos, end_pos - pos);
         }
@@ -133,12 +133,11 @@ namespace rfss {
         HTTPResponse response;
 
         Database& db = Database::get_instance();
-
         std::string username = get_form_field(req.body, "username");
         std::string password = get_form_field(req.body, "password");
         std::string confirm_password = get_form_field(req.body, "confirm_password");
         std::regex passwordRegex("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,}$");
-
+        std::cout << "x" << password << "x" << std::endl;
         if (username.empty() || password.empty() || confirm_password.empty()) {
             send_bad_request(client_socket);
             std::cerr << "Error: Empty Fields!\n";

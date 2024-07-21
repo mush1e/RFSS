@@ -1,11 +1,12 @@
 #include "http_parser.hpp"
 
 namespace rfss {
-
-    const int BUFFER_SIZE = 99999;
+    const size_t BUFFER_SIZE = 90000;
+     
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Parse Form Data ~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto parse_form_data(const std::string& form_data, HTTPRequest& req) -> void {
+        std::cout << form_data << std::endl;
         std::istringstream iss(form_data);
         std::string pair;
         while (std::getline(iss, pair, '&')) {
@@ -13,14 +14,26 @@ namespace rfss {
             if (pos != std::string::npos) {
                 std::string key = pair.substr(0, pos);
                 std::string value = pair.substr(pos + 1);
-
                 // Decode URL-encoded key and value
                 key = url_decode(key);
                 value = url_decode(value);
-                std::cout << key << ": " << value << std::endl;
-                req.body += key + ": " + value + "\n"; // Assuming you want to store key-value pairs in the body
+                req.body.append(key + ": " + value + "\n");
             }
         }
+    }
+
+    std::string trim(const std::string& str) {
+        // Find the first non-whitespace character
+        auto start = str.find_first_not_of(" \t\n\r\f\v");
+        if (start == std::string::npos) {
+            return ""; // All whitespace
+        }
+
+        // Find the last non-whitespace character
+        auto end = str.find_last_not_of(" \t\n\r\f\v");
+
+        // Return the substring from start to end
+        return str.substr(start, end - start + 1);
     }
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Parse Request ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,6 +44,9 @@ namespace rfss {
         std::getline(iss, line);
         std::istringstream line_stream(line);
         line_stream >> req.method >> req.URI >> req.version;
+        req.method = trim(req.method);
+        req.URI = trim(req.URI);
+        req.version = trim(req.version);
 
         while (std::getline(iss, line) && line != "\r") {
             if (line.back() == '\r') {
@@ -52,8 +68,8 @@ namespace rfss {
                     while (std::getline(cookie_stream, cookie_pair, ';')) {
                         size_t eq_pos = cookie_pair.find('=');
                         if (eq_pos != std::string::npos) {
-                            std::string cookie_name = cookie_pair.substr(0, eq_pos);
-                            std::string cookie_value = cookie_pair.substr(eq_pos + 1);
+                            std::string cookie_name = trim(cookie_pair.substr(0, eq_pos));
+                            std::string cookie_value = trim(cookie_pair.substr(eq_pos + 1));
                             req.cookies.emplace_back(cookie_name, cookie_value);
                         }
                     }
@@ -84,8 +100,6 @@ namespace rfss {
 
                     if (is_form_data) {
                         parse_form_data(body_content, req);
-                    } else if (is_multipart_data) {
-                        std::cout << "Multipart data encountered" << std::endl;
                     } else {
                         req.body = body_content;
                     }
@@ -100,28 +114,18 @@ namespace rfss {
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~ Recieve Request ~~~~~~~~~~~~~~~~~~~~~~~~~~
     void handle_client(int client_socket) {
         char buffer[BUFFER_SIZE];
-        std::string http_request_string;
-        int bytes_read = 0;
-
-        do {
-            bytes_read = recv(client_socket, buffer, BUFFER_SIZE, 0);
-            if (bytes_read < 0) {
-                std::cerr << "Error: Client disconnected from server or no data received!\n";
-                close(client_socket);
-                return;
-            }
-            if (bytes_read == 0)
-                break;
-
-            http_request_string.append(buffer,bytes_read);
-
-            if (http_request_string.find("\r\n\r\n") != std::string::npos)
-                break;
-        
-        } while (bytes_read > 0);
-
-
+        size_t body_size = 0;
         HTTPRequest request;
+        std::string http_request_string;
+
+
+        size_t bytes_read = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_read < 0) {
+            std::cerr << "Error: Client disconnected from server or no data received!\n";
+            close(client_socket);
+            return;
+        }
+        http_request_string.append(buffer,bytes_read);
         parse_request(request, http_request_string);
         handle_request(request, client_socket);
         close(client_socket);
