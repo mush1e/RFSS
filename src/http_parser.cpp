@@ -102,7 +102,6 @@ namespace rfss {
             parse_form_data(body_content, req);
         } else if (is_multipart_data) { 
             req.body = body_content;
-            std::cout << req.body;
         } else {
             req.body = body_content;
         }

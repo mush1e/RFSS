@@ -272,7 +272,73 @@ namespace rfss {
         send(client_socket, http_response.c_str(), http_response.length(), 0);
     }
 
-    auto handle_file_upload(HTTPRequest& req, int client_socket) -> void {
+    static std::string trim(const std::string& str) {
+        // Find the first non-whitespace character
+        auto start = str.find_first_not_of(" \t\n\r\f\v");
+        if (start == std::string::npos) {
+            return ""; // All whitespace
+        }
+
+        // Find the last non-whitespace character
+        auto end = str.find_last_not_of(" \t\n\r\f\v");
+
+        // Return the substring from start to end
+        return str.substr(start, end - start + 1);
+    }   
+
+    auto handle_file_upload(HTTPRequest &req, int client_socket) -> void {
+        std::string boundary = "--" + req.multipart_boundary;
+        size_t pos = 0, next_pos;
+
+        while ((next_pos = req.body.find(boundary, pos)) != std::string::npos) {
+            std::string part = req.body.substr(pos, next_pos - pos);
+            pos = next_pos + boundary.length();
+
+            if (part.substr(0, 2) == "\r\n") {
+                part = part.substr(2);
+            }
+
+            std::istringstream part_stream(part);
+            std::string header_line;
+            std::string file_name;
+            std::string file_content;
+            bool is_file = false;
+
+            while (std::getline(part_stream, header_line) && header_line != "\r") {
+                if (header_line.back() == '\r') {
+                    header_line.pop_back();
+                }
+                size_t colon_pos = header_line.find(':');
+                if (colon_pos != std::string::npos) {
+                    std::string header_name = trim(header_line.substr(0, colon_pos));
+                    std::string header_value = trim(header_line.substr(colon_pos + 1));
+                    if (header_name == "Content-Disposition") {
+                        size_t file_pos = header_value.find("filename=\"");
+                        if (file_pos != std::string::npos) {
+                            is_file = true;
+                            size_t start = file_pos + 10;
+                            size_t end = header_value.find("\"", start);
+                            file_name = header_value.substr(start, end - start);
+                        }
+                    }
+                }
+            }
+
+            std::getline(part_stream, header_line);
+            std::ostringstream content_stream;
+            content_stream << part_stream.rdbuf();
+            file_content = content_stream.str();
+            if (file_content.size() >= 2 && file_content.substr(file_content.size() - 2) == "\r\n") {
+                file_content = file_content.substr(0, file_content.size() - 2);
+            }
+
+            if (is_file) {
+                std::ofstream ofs("./file_dump/" + file_name, std::ios::binary);
+                ofs.write(file_content.c_str(), file_content.size());
+                ofs.close();
+            }
+        }
+
         std::string http_response;
         HTTPResponse response;
         response.status_code = 200;
