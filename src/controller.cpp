@@ -272,7 +272,7 @@ namespace rfss {
         send(client_socket, http_response.c_str(), http_response.length(), 0);
     }
 
-    auto save_file(HTTPRequest& req) -> void {
+    auto save_file(HTTPRequest& req, File_Data& file) -> void {
         std::string boundary = "--" + req.multipart_boundary;
         size_t pos = req.body.find(boundary);
         
@@ -303,6 +303,7 @@ namespace rfss {
                         size_t start = file_pos + 10;
                         size_t end = header_line.find("\"", start);
                         file_name = header_line.substr(start, end - start);
+                        file.file_name = file_name;
                     }
                 }
             }
@@ -312,27 +313,39 @@ namespace rfss {
                 if (content.size() >= 2 && content.substr(content.size() - 2) == "\r\n") {
                     content = content.substr(0, content.size() - 2);
                 }
-
-                std::ofstream ofs("./file_dump/" + file_name, std::ios::binary);
+                file.file_path = "./file_dump/" + file_name;
+                std::ofstream ofs(file.file_path, std::ios::binary);
                 ofs.write(content.data(), content.size());
                 ofs.close();
-
-                std::cout << "File saved: " << file_name << std::endl;
+                file.creation_time = std::time(0);
+                std::cout << "File saved: " << file_name << " at " <<  std::ctime(&file.creation_time)<< std::endl;
             }
         }           
     }
 
     auto handle_file_upload(HTTPRequest &req, int client_socket) -> void {
-        
-
+    
         std::string http_response;
         HTTPResponse response;
+        File_Data file {};
+        Database& db = Database::get_instance();
+        Session_Manager& session = Session_Manager::get_instance();
 
-        // TODO: Update DB with saved files, update filelist
-        // Think about having private and public files
+        auto it = std::find_if(req.cookies.begin(), req.cookies.end(), 
+                        [](const std::pair<std::string, std::string>& cookie) {
+                            return cookie.first == "session_id";
+                        });
 
-        
-        save_file(req);
+        if (it != req.cookies.end() && session.is_valid_session(it->second)) {
+            std::string username = session.get_user_id(it->second);
+            std::cout << username << std::endl;
+        }
+        else {
+            std::cout << "Author is anonymous\n";
+        }
+
+
+        save_file(req, file);
 
         response.status_code = 200;
         response.status_message = "OK";

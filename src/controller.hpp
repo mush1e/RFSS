@@ -5,6 +5,7 @@
 #include <sstream>
 #include <sys/socket.h>
 #include <unordered_map>
+#include <ctime>
 
 #include "http.hpp"
 #include "database.hpp"
@@ -15,6 +16,14 @@
 
 namespace rfss {
 
+    struct File_Data {
+        std::string file_name;
+        std::string file_path;
+        std::string author;
+        size_t file_size;
+        time_t creation_time;
+    };
+
     // helpers
     void sendNotFoundResponse(int client_socket);
     void serveStaticFile(const std::string& file_path, int client_socket);
@@ -23,7 +32,7 @@ namespace rfss {
     std::string get_form_field(const std::string& body, const std::string& field_name);
     std::string url_decode(const std::string& str);
     std::string get_file_extention(const std::string& filename);
-    void save_file(HTTPRequest& req);
+    void save_file(HTTPRequest& req, File_Data& file);
 
 
     // controllers

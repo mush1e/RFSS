@@ -136,19 +136,10 @@ namespace rfss {
                                             "FOREIGN KEY (uploader_id) REFERENCES users(user_id)"
                                             ");";
 
-        const char* create_permissions_table_sql = "CREATE TABLE IF NOT EXISTS permissions ("
-                                                "permission_id INTEGER PRIMARY KEY,"
-                                                "file_id INTEGER,"
-                                                "user_id INTEGER,"
-                                                "is_public INTEGER,"
-                                                "FOREIGN KEY (file_id) REFERENCES files(file_id),"
-                                                "FOREIGN KEY (user_id) REFERENCES users(user_id)"
-                                                ");";
 
         // Execute SQL queries to create tables
         execute_query(create_users_table_sql);
         execute_query(create_files_table_sql);
-        execute_query(create_permissions_table_sql);
     }
 
     Database::Database() {
