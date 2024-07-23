@@ -318,7 +318,6 @@ namespace rfss {
                 ofs.write(content.data(), content.size());
                 ofs.close();
                 file.creation_time = std::time(0);
-                std::cout << "File saved: " << file_name << " at " <<  std::ctime(&file.creation_time)<< std::endl;
             }
         }           
     }
@@ -338,14 +337,18 @@ namespace rfss {
 
         if (it != req.cookies.end() && session.is_valid_session(it->second)) {
             std::string username = session.get_user_id(it->second);
-            std::cout << username << std::endl;
+            file.author = username;
         }
         else {
-            std::cout << "Author is anonymous\n";
+            file.author = "Anonymous"; 
         }
 
 
         save_file(req, file);
+
+        std::cout << "File name: " << file.file_name << std::endl << "File Path: " << file.file_path
+                                                     << std::endl << "Creation Time: " << std::ctime(&file.creation_time) 
+                                                     << std::endl << "Author: " << file.author << std::endl;
 
         response.status_code = 200;
         response.status_message = "OK";
