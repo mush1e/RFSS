@@ -272,7 +272,7 @@ namespace rfss {
         send(client_socket, http_response.c_str(), http_response.length(), 0);
     }
 
-    auto handle_file_upload(HTTPRequest &req, int client_socket) -> void {
+    auto save_file(HTTPRequest& req) -> void {
         std::string boundary = "--" + req.multipart_boundary;
         size_t pos = req.body.find(boundary);
         
@@ -319,14 +319,24 @@ namespace rfss {
 
                 std::cout << "File saved: " << file_name << std::endl;
             }
-        }
+        }           
+    }
+
+    auto handle_file_upload(HTTPRequest &req, int client_socket) -> void {
+        
 
         std::string http_response;
         HTTPResponse response;
+
+        // TODO: Update DB with saved files, update filelist
+        // Think about having private and public files
+
+        
+        save_file(req);
+
         response.status_code = 200;
         response.status_message = "OK";
         http_response = response.generate_response();
-
         send(client_socket, http_response.c_str(), http_response.length(), 0);
     }
 }

@@ -23,6 +23,7 @@ namespace rfss {
     std::string get_form_field(const std::string& body, const std::string& field_name);
     std::string url_decode(const std::string& str);
     std::string get_file_extention(const std::string& filename);
+    void save_file(HTTPRequest& req);
 
 
     // controllers
