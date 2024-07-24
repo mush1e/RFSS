@@ -343,13 +343,9 @@ namespace rfss {
             file.author = "Anonymous"; 
         }
 
-
         save_file(req, file);
-
-        std::cout << "File name: " << file.file_name << std::endl << "File Path: " << file.file_path
-                                                     << std::endl << "Creation Time: " << std::ctime(&file.creation_time) 
-                                                     << std::endl << "Author: " << file.author << std::endl;
-
+        db.insert_file(file);
+        
         response.status_code = 200;
         response.status_message = "OK";
         http_response = response.generate_response();

@@ -16,14 +16,6 @@
 
 namespace rfss {
 
-    struct File_Data {
-        std::string file_name;
-        std::string file_path;
-        std::string author;
-        size_t file_size;
-        time_t creation_time;
-    };
-
     // helpers
     void sendNotFoundResponse(int client_socket);
     void serveStaticFile(const std::string& file_path, int client_socket);

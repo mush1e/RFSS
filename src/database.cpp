@@ -118,6 +118,26 @@ namespace rfss {
             return true;
     }
 
+    std::string Database::get_user(const std::string& username) {
+        const char* query = "SELECT user_id FROM users WHERE username = ?;";
+
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db, query, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Error: Failed to create statement - getuser\n";
+        }
+
+        sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
+        std::string result;
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            result = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        } else {
+            result = "User not found";
+        }
+        sqlite3_finalize(stmt);
+        std::cout << result << std::endl;
+        return result;
+    }
+
     void Database::create_tables() {
         const char* create_users_table_sql = "CREATE TABLE IF NOT EXISTS users ("
                                             "user_id INTEGER PRIMARY KEY,"
@@ -127,12 +147,12 @@ namespace rfss {
                                             ");";
 
         const char* create_files_table_sql = "CREATE TABLE IF NOT EXISTS files ("
-                                            "file_id INTEGER PRIMARY KEY,"
+                                            "file_id INTEGER,"
                                             "file_name TEXT,"
-                                            "file_type TEXT,"
                                             "file_path TEXT,"
                                             "upload_date DATE,"
                                             "uploader_id INTEGER,"
+                                            "PRIMARY KEY (file_name, uploader_id),"
                                             "FOREIGN KEY (uploader_id) REFERENCES users(user_id)"
                                             ");";
 
@@ -142,13 +162,64 @@ namespace rfss {
         execute_query(create_files_table_sql);
     }
 
+
+    std::string time_t_to_sql_date(time_t timestamp) {
+        // Convert time_t to tm structure
+        struct tm* time_info = std::gmtime(&timestamp);
+        
+        // Create a string stream to format the date
+        std::ostringstream oss;
+        oss << std::put_time(time_info, "%Y-%m-%d");
+        
+        // Return the formatted date as a string
+        return oss.str();
+    }
+
+    auto Database::insert_file(File_Data& file) -> bool {
+        const char* insert_file_sql = 
+            "INSERT INTO files (file_name, file_path, upload_date, uploader_id) "
+            "VALUES (?, ?, ?, ?);";
+
+        sqlite3_stmt* stmt;
+
+        int uploader_id = std::stoi(this->get_user(file.author));
+
+        if (sqlite3_prepare_v2(db, insert_file_sql, -1, &stmt, nullptr) != SQLITE_OK) {
+            std::cerr << "Error: Could not insert file data into DB" << std::endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, file.file_name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, file.file_path.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, time_t_to_sql_date(file.creation_time).c_str(), -1, SQLITE_TRANSIENT);
+        
+        if (uploader_id != -1)
+            sqlite3_bind_int(stmt, 4, uploader_id);
+        else
+            sqlite3_bind_null(stmt, 4);
+
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            std::cerr << "Error: Could not insert file data into DB" << std::endl;
+            sqlite3_finalize(stmt);
+            return false;
+        }
+
+        sqlite3_finalize(stmt);
+        return true;
+    }
+
     Database::Database() {
+        std::string anon = "Anonymous";
+        std::string anon_p = "Anonymous123";
+
         if(sqlite3_open("./db/model.sql", &db) != SQLITE_OK) {
             std::cerr << "Error: Can't open database: " 
                     << sqlite3_errmsg(this->db) << std::endl;
             exit(1);
         }
         this->create_tables();
+        this->insert_user(anon, anon_p);
     }
 
     Database::~Database() {
