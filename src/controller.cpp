@@ -1,4 +1,5 @@
 #include "controller.hpp"
+#include <filesystem>
 
 namespace rfss {
 
@@ -120,7 +121,7 @@ namespace rfss {
     }
 
     // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (Save File in file_dump) ~~~~~~~~~~~~~~~~~~~~~~~
-    auto save_file(HTTPRequest& req, File_Data& file) -> void {
+    auto save_file(HTTPRequest& req, File_Data& file) -> bool {
         std::string boundary = "--" + req.multipart_boundary;
         size_t pos = req.body.find(boundary);
 
@@ -159,15 +160,30 @@ namespace rfss {
                 if (content.size() >= 2 && content.substr(content.size() - 2) == "\r\n") {
                     content = content.substr(0, content.size() - 2);
                 }
-                file.file_path = "./file_dump/" + file_name;
+                file.file_path = "./file_dump/" + file.author + "/" + file_name;
                 std::ofstream ofs(file.file_path, std::ios::binary);
                 ofs.write(content.data(), content.size());
                 ofs.close();
                 file.creation_time = std::time(0);
+                return true;
             }
         }
+        return false;
     }
 
+    auto create_user_directory(std::string username) -> bool {
+        std::filesystem::path dir_path("./file_dump/"+username);
+        if (!std::filesystem::exists(dir_path)) {
+            if (std::filesystem::create_directories(dir_path)) {
+                std::cout << "Directory created: " << dir_path << std::endl;
+            } else {
+                std::cerr << "Failed to create directory: " << dir_path << std::endl;
+            }
+        } else {
+            std::cout << "Directory already exists: " << dir_path << std::endl;
+        }
+        return true;
+    }
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ controllers GET ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto handle_get_home(HTTPRequest& req, int client_socket) -> void {
@@ -279,7 +295,7 @@ namespace rfss {
             send_internal_server_error(client_socket);
             return;
         }
-
+        create_user_directory(username);
         response.status_code = 200;
         response.status_message = "OK";
         http_response = response.generate_response();
@@ -345,12 +361,14 @@ namespace rfss {
             file.author = "Anonymous";
         }
 
-        save_file(req, file);
-        db.insert_file(file);
+        if (save_file(req, file) && db.insert_file(file)){
 
-        response.status_code = 200;
-        response.status_message = "OK";
-        http_response = response.generate_response();
-        send(client_socket, http_response.c_str(), http_response.length(), 0);
+            response.status_code = 200;
+            response.status_message = "OK";
+            http_response = response.generate_response();
+            send(client_socket, http_response.c_str(), http_response.length(), 0);
+        } else {
+            send_internal_server_error(client_socket);
+        }
     }
 }

@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 #include <sys/socket.h>
 #include <unordered_map>
 #include <ctime>
@@ -24,7 +25,8 @@ namespace rfss {
     std::string get_form_field(const std::string& body, const std::string& field_name);
     std::string url_decode(const std::string& str);
     std::string get_file_extention(const std::string& filename);
-    void save_file(HTTPRequest& req, File_Data& file);
+    bool create_user_directory(std::string username);
+    bool save_file(HTTPRequest& req, File_Data& file);
 
 
     // controllers

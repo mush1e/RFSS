@@ -24,18 +24,19 @@ namespace rfss {
     }
 
     auto HTTP_Server::start() -> void {
-        
+
         if(listen(server_socket, 10) < 0) {
             std::cerr << "Error: Failed to listen for connections!\n";
             exit(1);
         }
         Database& db = Database::get_instance();
+        create_user_directory("Anonymous");
         std::cout << "Server Started! Listening on port: " << this->port << std::endl;
-        
+
         for(;;) {
 
             int client_socket = accept(this->server_socket, nullptr, nullptr);
-            
+
             if(client_socket < 0) {
                 std::cerr << "Error: Failed to accept connection!\n";
                 continue;
