@@ -42,29 +42,27 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        document.getElementById('upload-form').addEventListener('submit', function(event) {
-            event.preventDefault();
+      document.getElementById('upload-form').addEventListener('submit', function(event) {
+          event.preventDefault();
 
-            let form = event.target;
-            let formData = new FormData(form);
+          let form = event.target;
+          let formData = new FormData(form);
 
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok.');
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert('File uploaded successfully!');
-            })
-            .catch(error => {
-                alert('A file with the same name exists!');
-            });
-        });
-    </script>
+          fetch('/upload', {
+              method: 'POST',
+              body: formData
+          })
+          .then(response => {
+              if (response.ok) {
+                  alert('File uploaded successfully!');
+              } else {
+                  alert('File with that name already exists! Try logging in');
+              }
+          })
+          .catch(error => {
+              alert('Error: ' + error.message);
+          });
+      });
+  </script>
 </body>
 </html>
