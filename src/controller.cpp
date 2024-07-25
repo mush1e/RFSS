@@ -27,14 +27,14 @@ namespace rfss {
         os << "Version: " << req.version << "\n";
         os << "Headers:\n";
 
-        for (const auto& header : req.headers) 
+        for (const auto& header : req.headers)
             os << "  " << std::setw(20) << std::left << header.first << ": " << header.second << "\n";
 
         os << "Cookies:\n";
 
-        for (const auto& cookie : req.cookies) 
+        for (const auto& cookie : req.cookies)
             os << "  " << std::setw(20) << std::left << cookie.first << ": " << cookie.second << "\n";
-        
+
         os << "Body: " << req.body << "\n";
 
         return os;
@@ -76,7 +76,7 @@ namespace rfss {
         return filename.substr(dot_pos + 1);
     }
 
-
+    // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (Send 400) ~~~~~~~~~~~~~~~~~~~~~~~
     auto sendNotFoundResponse(int client_socket) -> void {
         HTTPResponse response {};
         response.status_code = 400;
@@ -86,6 +86,7 @@ namespace rfss {
 
     }
 
+    // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (Serve Static HTML) ~~~~~~~~~~~~~~~~~~~~~~~
     auto serveStaticFile(const std::string& file_path, int client_socket) -> void {
         std::ifstream file(file_path);
 
@@ -104,7 +105,8 @@ namespace rfss {
         else
             sendNotFoundResponse(client_socket);
     }
-    
+
+     // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (Get Form Values) ~~~~~~~~~~~~~~~~~~~~~~~
     auto get_form_field(const std::string& body, const std::string& field_name) -> std::string {
         std::string field_value;
         size_t pos = body.find(field_name + ": ");
@@ -117,9 +119,57 @@ namespace rfss {
         return url_decode(field_value);
     }
 
+    // ~~~~~~~~~~~~~~~~~~~~~~~ Helper Function (Save File in file_dump) ~~~~~~~~~~~~~~~~~~~~~~~
+    auto save_file(HTTPRequest& req, File_Data& file) -> void {
+        std::string boundary = "--" + req.multipart_boundary;
+        size_t pos = req.body.find(boundary);
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ controllers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        while (pos != std::string::npos) {
+            size_t next_pos = req.body.find(boundary, pos + boundary.length());
+            if (next_pos == std::string::npos) break;
 
+            std::string part = req.body.substr(pos + boundary.length(), next_pos - pos - boundary.length());
+            pos = next_pos;
+
+            size_t header_end = part.find("\r\n\r\n");
+            if (header_end == std::string::npos) continue;
+
+            std::string headers = part.substr(0, header_end);
+            std::string content = part.substr(header_end + 4);
+            std::string file_name;
+            bool is_file = false;
+
+            std::istringstream header_stream(headers);
+            std::string header_line;
+
+            while (std::getline(header_stream, header_line) && !header_line.empty()) {
+                if (header_line.find("Content-Disposition:") != std::string::npos) {
+                    size_t file_pos = header_line.find("filename=\"");
+                    if (file_pos != std::string::npos) {
+                        is_file = true;
+                        size_t start = file_pos + 10;
+                        size_t end = header_line.find("\"", start);
+                        file_name = header_line.substr(start, end - start);
+                        file.file_name = file_name;
+                    }
+                }
+            }
+
+            if (is_file && !file_name.empty()) {
+                if (content.size() >= 2 && content.substr(content.size() - 2) == "\r\n") {
+                    content = content.substr(0, content.size() - 2);
+                }
+                file.file_path = "./file_dump/" + file_name;
+                std::ofstream ofs(file.file_path, std::ios::binary);
+                ofs.write(content.data(), content.size());
+                ofs.close();
+                file.creation_time = std::time(0);
+            }
+        }
+    }
+
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ controllers GET ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto handle_get_home(HTTPRequest& req, int client_socket) -> void {
         serveStaticFile("./public/index.html", client_socket);
     }
@@ -128,6 +178,67 @@ namespace rfss {
         serveStaticFile("./public/register.html", client_socket);
     }
 
+    auto handle_get_login(HTTPRequest& req, int client_socket) -> void {
+        serveStaticFile("./public/login.html", client_socket);
+    }
+
+    auto handle_get_is_auth(HTTPRequest& req, int client_socket) -> void {
+        std::string http_response;
+        HTTPResponse response;
+        Session_Manager& session_manager = Session_Manager::get_instance();
+        auto it = std::find_if(req.cookies.begin(), req.cookies.end(),
+                        [](const std::pair<std::string, std::string>& cookie) {
+                            return cookie.first == "session_id";
+                        });
+
+        if (it != req.cookies.end() && session_manager.is_valid_session(it->second)) {
+            response.status_code = 200;
+            response.status_message = "OK";
+            response.body = R"(
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/logout">Logout</a>
+                                </li>
+                              )";
+        } else {
+            response.status_code = 200;
+            response.status_message = "Forbidden";
+            response.body = R"(
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/register">Register</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/login">Login</a>
+                                </li>
+                              )";
+        }
+        http_response = response.generate_response();
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    }
+
+    auto handle_get_logout(HTTPRequest& req, int client_socket) -> void {
+        std::string http_response;
+        HTTPResponse response;
+
+        Session_Manager& session_manager = Session_Manager::get_instance();
+
+        auto it = std::find_if(req.cookies.begin(), req.cookies.end(),
+                        [] (const std::pair<std::string, std::string>& cookie) {
+                            return cookie.first == "session_id";
+                        });
+
+        if (it != req.cookies.end()) {
+            session_manager.terminate_session(it->second);
+        }
+
+        response.status_code = 302;
+        response.status_message = "FOUND";
+        response.location = "/";
+        http_response = response.generate_response();
+
+        send(client_socket, http_response.c_str(), http_response.length(), 0);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ controllers POST ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     auto handle_post_register(HTTPRequest& req, int client_socket) -> void {
         std::string http_response;
         HTTPResponse response;
@@ -148,7 +259,7 @@ namespace rfss {
             std::cerr << "Error: Invalid Password!\n";
             return;
         }
- 
+
         if (password != confirm_password) {
             send_bad_request(client_socket);
             std::cerr << "Error: Password mismatch!\n";
@@ -173,10 +284,6 @@ namespace rfss {
         response.status_message = "OK";
         http_response = response.generate_response();
         send(client_socket, http_response.c_str(), http_response.length(), 0);
-    }
-
-    auto handle_get_login(HTTPRequest& req, int client_socket) -> void {
-        serveStaticFile("./public/login.html", client_socket);
     }
 
     auto handle_post_login(HTTPRequest& req, int client_socket) -> void {
@@ -214,123 +321,18 @@ namespace rfss {
         send(client_socket, success_response.c_str(), success_response.length(), 0);
     }
 
-    auto handle_get_is_auth(HTTPRequest& req, int client_socket) -> void {
-        std::string http_response;
-        HTTPResponse response;
 
-        Session_Manager& session_manager = Session_Manager::get_instance();
 
-        auto it = std::find_if(req.cookies.begin(), req.cookies.end(), 
-                        [](const std::pair<std::string, std::string>& cookie) {
-                            return cookie.first == "session_id";
-                        });
 
-        if (it != req.cookies.end() && session_manager.is_valid_session(it->second)) {
-            response.status_code = 200;
-            response.status_message = "OK";
-            response.body = R"(
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/logout">Logout</a>
-                                </li>
-                              )";
-        } else {
-            response.status_code = 200;
-            response.status_message = "Forbidden";
-            response.body = R"(
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/register">Register</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/login">Login</a>
-                                </li>
-                              )";
-        }
-        http_response = response.generate_response();
-        send(client_socket, http_response.c_str(), http_response.length(), 0);
-    }
+    auto handle_post_file_upload(HTTPRequest &req, int client_socket) -> void {
 
-    auto handle_get_logout(HTTPRequest& req, int client_socket) -> void {
-        std::string http_response;
-        HTTPResponse response; 
-
-        Session_Manager& session_manager = Session_Manager::get_instance();
-
-        auto it = std::find_if(req.cookies.begin(), req.cookies.end(), 
-                        [] (const std::pair<std::string, std::string>& cookie) {
-                            return cookie.first == "session_id";
-                        });
-        
-        if (it != req.cookies.end()) {
-            session_manager.terminate_session(it->second);
-        }
-
-        response.status_code = 302;
-        response.status_message = "FOUND";
-        response.location = "/";
-        http_response = response.generate_response();
-
-        send(client_socket, http_response.c_str(), http_response.length(), 0);
-    }
-
-    auto save_file(HTTPRequest& req, File_Data& file) -> void {
-        std::string boundary = "--" + req.multipart_boundary;
-        size_t pos = req.body.find(boundary);
-        
-        while (pos != std::string::npos) {
-            size_t next_pos = req.body.find(boundary, pos + boundary.length());
-            if (next_pos == std::string::npos) break;
-
-            std::string part = req.body.substr(pos + boundary.length(), next_pos - pos - boundary.length());
-            pos = next_pos;
-
-            size_t header_end = part.find("\r\n\r\n");
-            if (header_end == std::string::npos) continue;
-
-            std::string headers = part.substr(0, header_end);
-            std::string content = part.substr(header_end + 4);
-
-            std::string file_name;
-            bool is_file = false;
-
-            std::istringstream header_stream(headers);
-            std::string header_line;
-
-            while (std::getline(header_stream, header_line) && !header_line.empty()) {
-                if (header_line.find("Content-Disposition:") != std::string::npos) {
-                    size_t file_pos = header_line.find("filename=\"");
-                    if (file_pos != std::string::npos) {
-                        is_file = true;
-                        size_t start = file_pos + 10;
-                        size_t end = header_line.find("\"", start);
-                        file_name = header_line.substr(start, end - start);
-                        file.file_name = file_name;
-                    }
-                }
-            }
-
-            if (is_file && !file_name.empty()) {
-
-                if (content.size() >= 2 && content.substr(content.size() - 2) == "\r\n") {
-                    content = content.substr(0, content.size() - 2);
-                }
-                file.file_path = "./file_dump/" + file_name;
-                std::ofstream ofs(file.file_path, std::ios::binary);
-                ofs.write(content.data(), content.size());
-                ofs.close();
-                file.creation_time = std::time(0);
-            }
-        }           
-    }
-
-    auto handle_file_upload(HTTPRequest &req, int client_socket) -> void {
-    
         std::string http_response;
         HTTPResponse response;
         File_Data file {};
         Database& db = Database::get_instance();
         Session_Manager& session = Session_Manager::get_instance();
 
-        auto it = std::find_if(req.cookies.begin(), req.cookies.end(), 
+        auto it = std::find_if(req.cookies.begin(), req.cookies.end(),
                         [](const std::pair<std::string, std::string>& cookie) {
                             return cookie.first == "session_id";
                         });
@@ -340,7 +342,7 @@ namespace rfss {
             file.author = username;
         }
         else {
-            file.author = "Anonymous"; 
+            file.author = "Anonymous";
         }
 
         save_file(req, file);

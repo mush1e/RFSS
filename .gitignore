@@ -27,3 +27,5 @@ db/*
 
 file_dump/*
 !file_dump/.gitkeep
+
+.clangd

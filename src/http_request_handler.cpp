@@ -14,7 +14,7 @@ namespace rfss {
         else if (req.method == "POST") {
                  if (req.URI == "/register")    handle_post_register(req, client_socket);
             else if (req.URI == "/login")       handle_post_login(req, client_socket);
-            else if (req.URI == "/upload")      handle_file_upload(req, client_socket);
+            else if (req.URI == "/upload")      handle_post_file_upload(req, client_socket);
         } else {
             // serve not found static file
         }
